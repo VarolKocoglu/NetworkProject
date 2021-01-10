@@ -57,16 +57,17 @@ class ProxyThreadSide extends Thread {
         DataOutputStream outToClient = null;
         BufferedReader inFromServer = null;
         DataOutputStream outToServer = null;
+        String splitSentence = "";
         try {
 
             inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
             outToClient = new DataOutputStream(connectionSocket.getOutputStream());
 
-            Socket toServerSocket = new Socket("localhost", SERVER_PORT_NUMBER);
+
             clientSentence = inFromClient.readLine();             // For getting after the /
-            System.out.println(clientSentence);
+            System.out.println("********************* Client Sentence: " + clientSentence);
             if (clientSentence != null && clientSentence != "" && !(clientSentence.split(" ")[0]).equals("CONNECT")) {
-                String splitSentence = splitUp(clientSentence);
+                splitSentence = splitUp(clientSentence);
                 isGet = splitSentence.split(" ")[0];
                 sizeOfHtml = splitSentence.split("/")[1].split(" ")[0];
 
@@ -78,22 +79,20 @@ class ProxyThreadSide extends Thread {
             }
             if (isGet.equals("GET")) {
                 if (sizeOfHtmlValue <= 9999) {
+                    Socket toServerSocket = new Socket("localhost", SERVER_PORT_NUMBER);
                     String stringFromServer = "";
                     outToServer = new DataOutputStream(toServerSocket.getOutputStream());
-                    outToServer.writeBytes("GET /1.1 200 OK " + "\r\n");
+                    outToServer.writeBytes(splitSentence + "\r\n");
 
                     System.out.println(clientSentence + " has been sent");
 
                     inFromServer = new BufferedReader(new InputStreamReader(toServerSocket.getInputStream()));
-//                    StringBuffer buffer = new StringBuffer();
-//                    while (true) {
-//                        int ch = inFromServer.read();
-//                        if ((ch < 0) || (ch == '\n')) {
-//                            break;
-//                        }
-//                        buffer.append((char) ch);
-//                    }
-//                    String clientRequest = buffer.toString();
+                    System.out.println("Server has respond");
+                    stringFromServer = inFromServer.readLine();
+                    while(stringFromServer != null){
+                        outToClient.writeBytes(stringFromServer + "\r\n");
+                        stringFromServer = inFromServer.readLine();
+                    }
 
                     String stringToClient = inFromServer.readLine();
                     if(stringToClient == null){
@@ -105,39 +104,43 @@ class ProxyThreadSide extends Thread {
 //                        stringToClient = inFromServer.readLine();
 //                        break;
 //                    }
-                    System.out.println("Server has respond");
-                    outToClient.writeBytes(stringToClient + "\r\n");
-                    outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
-                    outToClient.writeBytes("Content-Length:"+ sizeOfHtmlValue +"\r\n\r\n\r\n");
-                    outToClient.writeBytes("<html>" +
-                            "<head><TITLE>I am 100 bytes long</TITLE></head>" +
-                            "<body><h1>" + "</h1></body>" +
-                            "</html>");
+
+//                    outToClient.writeBytes(stringToClient + "\r\n");
+//                    outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
+//                    outToClient.writeBytes("Content-Length:"+ sizeOfHtmlValue +"\r\n\r\n\r\n");
+//                    outToClient.writeBytes("<html>" +
+//                            "<head><TITLE>Proxy</TITLE></head>" +
+//                            "<body><h1>" + "</h1></body>" +
+//                            "</html>");
                     toServerSocket.close();
                     connectionSocket.close();
 
                 } else {
-                    //"Bad Request" message with error code 400
+                    //"Request-URI Too Long" message with error code 414
                     outToClient.writeBytes("HTTP/1.1 414 Request-URI Too Long\r\n");
                     outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
-                    outToClient.writeBytes("<html>" +
-                            "<head><TITLE>Request-URI Too Long</TITLE></head>" +
-                            "<body><h1>Request-URI Too Long</h1></body>" +
-                            "</html>");
+//                    outToClient.writeBytes("<html>" +
+//                            "<head><TITLE>Request-URI Too Long</TITLE></head>" +
+//                            "<body><h1>Request-URI Too Long</h1></body>" +
+//                            "</html>");
                     System.out.println("414 Request-URI Too Long");
+                    connectionSocket.close();
+
                 }
 
             }
-            else {
-                //“Not Implemented” (501)
-                outToClient.writeBytes("HTTP/1.1 501 Not Implemented\r\n");
-                outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
-                outToClient.writeBytes("<html>" +
-                        "<head><TITLE>Not Implemented</TITLE></head>" +
-                        "<body><h1>The method is not Get</h1></body>" +
-                        "</html>");
-                System.out.println("Thread "+time+" has send the message");
-            }
+//            else {
+//                //“Not Implemented” (501)
+//                outToClient.writeBytes("HTTP/1.1 501 Not Implemented\r\n");
+//                outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
+////                outToClient.writeBytes("<html>" +
+////                        "<head><TITLE>Not Implemented</TITLE></head>" +
+////                        "<body><h1>The method is not Get</h1></body>" +
+////                        "</html>");
+//                System.out.println("Thread "+time+" has send the message");
+//                connectionSocket.close();
+//                toServerSocket.close();
+//            }
 
 
             ///////////////////////
@@ -147,12 +150,11 @@ class ProxyThreadSide extends Thread {
 //                DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream());
                 outToClient.writeBytes("HTTP/1.1 404 Not Found\r\n");
                 outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
-                outToClient.writeBytes("<html>" +
-                        "<head><TITLE>Not Found</TITLE></head>" +
-                        "<body><h1>404 Not Found</h1></body>" +
-                        "</html>");
+//                outToClient.writeBytes("<html>" +
+//                        "<head><TITLE>Not Found</TITLE></head>" +
+//                        "<body><h1>404 Not Found</h1></body>" +
+//                        "</html>");
                 System.out.println("Thread "+time+" has send the message");
-                outToClient.close();
                 connectionSocket.close();
             } catch (IOException ioException) {
                 ioException.printStackTrace();

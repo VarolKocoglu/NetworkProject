@@ -68,8 +68,7 @@ class ServerThreadSide extends Thread {
                     for (int x = sizeOfHtmlValue; (x - 100) > 0; x--)  // Hocanın verdiği HTML 96 byte sanki ona göre bir ayar çekebilirsin
                     {
                         addToHTML = addToHTML + "b";
-                        if(x == 50) // 50 b for each line
-                            addToHTML += "\n";
+
                     }
 
                     outToClient.writeBytes("HTTP/1.1 200 OK\r\n");
@@ -80,39 +79,46 @@ class ServerThreadSide extends Thread {
                             "<body><h1>" + addToHTML + "</h1></body>" +
                             "</html>");
           //          outToClient.flush();
-                    outToClient.close();
+
                     System.out.println("Message has send");
                 } else {
                     //"Bad Request" message with error code 400
                     outToClient.writeBytes("HTTP/1.1 400 Bad Request\r\n");
                     outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
-                    outToClient.writeBytes("<html>" +
-                            "<head><TITLE>I am 100 bytes long</TITLE></head>" +
-                            "<body><h1>" + addToHTML + "</h1></body>" +
-                            "</html>");
+//                    outToClient.writeBytes("<html>" +
+//                            "<head><TITLE>I am 100 bytes long</TITLE></head>" +
+//                            "<body><h1>" + addToHTML + "</h1></body>" +
+//                            "</html>");
                //     outToClient.flush();
-                    outToClient.close();
                     System.out.println("Message has send");
                 }
 
-            } else {
+            } else{
                 //“Not Implemented” (501)
-                outToClient.writeBytes("HTTP/1.1 501 Not Implemented\r\n");
-                outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
-                outToClient.writeBytes("<html>" +
-                        "<head><TITLE>Not Implemented</TITLE></head>" +
-                        "<body><h1>The method is not Get</h1></body>" +
-                        "</html>");
-         //       outToClient.flush();
-                outToClient.close();
-                System.out.println("Thread "+time+" has send the message");
+                try {
+                    outToClient.writeBytes("HTTP/1.1 501 Not Implemented\r\n");
+                    outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
+//                outToClient.writeBytes("<html>" +
+//                        "<head><TITLE>Not Implemented</TITLE></head>" +
+//                        "<body><h1>The method is not Get</h1></body>" +
+//                        "</html>");
+                    //       outToClient.flush();
+
+                    System.out.println("Thread "+time+" has send the message");
+                }
+                catch (SocketException se){
+                    System.out.println(" ");
+                }
+
             }
 
-
+//            connectionSocket.close();
+//            outToClient.close();
             ///////////////////////
 
         } catch ( IOException e) {
             e.printStackTrace();
+
         }
 
     }

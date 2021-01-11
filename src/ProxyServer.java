@@ -177,7 +177,7 @@ class ProxyThreadSide extends Thread {
         return splitSpace[0] + " /" + uri + " " + splitSpace[2];
     }
     public String readContent(String fileName) throws FileNotFoundException {
-        File file = new File("C:\\Users\\omero\\IdeaProjects\\NetworkProject\\cache\\"
+        File file = new File("cache\\"
                 + fileName + ".txt");
         Scanner reader = new Scanner(file);
         String content = "";
@@ -188,7 +188,7 @@ class ProxyThreadSide extends Thread {
     }
 
     public void cacheContent(String content, String fileName){
-        File file = new File("C:\\Users\\omero\\IdeaProjects\\NetworkProject\\cache\\"
+        File file = new File("cache\\"
                 + fileName + ".txt");
 
         try {
@@ -203,7 +203,7 @@ class ProxyThreadSide extends Thread {
         }
     }
     public void cacheAdditionalContent(String content, String fileName){
-        File file = new File("C:\\Users\\omero\\IdeaProjects\\NetworkProject\\cache\\"
+        File file = new File("cache\\"
                 + fileName + "-2.txt");
 
         try {
@@ -219,7 +219,7 @@ class ProxyThreadSide extends Thread {
     }
 
     public boolean isCached(String fileName){
-        File file = new File("C:\\Users\\omero\\IdeaProjects\\NetworkProject\\cache\\"
+        File file = new File("cache\\"
                 + fileName + ".txt");
         return file.exists();
     }

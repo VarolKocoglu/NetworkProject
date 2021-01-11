@@ -72,14 +72,14 @@ class ServerThreadSide extends Thread {
                     }
 
                     outToClient.writeBytes("HTTP/1.1 200 OK\r\n");
-                    outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
-                    outToClient.writeBytes("Content-Length:"+ sizeOfHtmlValue +"\r\n\r\n\r\n");
+//                    outToClient.writeBytes("Content-Type: text/html\r\n");
+//                    outToClient.writeBytes("Content-Length:"+ sizeOfHtmlValue +"\r\n");
                     outToClient.writeBytes("<html>" +
-                            "<head><TITLE>I am 100 bytes long</TITLE></head>" +
+                            "<head><TITLE>I am"+ sizeOfHtmlValue + " bytes long</TITLE></head>" +
                             "<body><h1>" + addToHTML + "</h1></body>" +
-                            "</html>");
+                            "</html>\r\n\r\n");
           //          outToClient.flush();
-
+                    connectionSocket.close();
                     System.out.println("Message has send");
                 } else {
                     //"Bad Request" message with error code 400

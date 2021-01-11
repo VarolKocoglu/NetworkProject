@@ -5,6 +5,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Scanner;
 import java.util.stream.Collectors;
 
 // Proxy server acts as both client and server. Implement methods of both client and server.
@@ -72,79 +73,70 @@ class ProxyThreadSide extends Thread {
                 sizeOfHtml = splitSentence.split("/")[1].split(" ")[0];
 
             }
-            try {
-                sizeOfHtmlValue = Integer.parseInt(sizeOfHtml);
-            } catch (NumberFormatException e) {
-                sizeOfHtmlValue = 0;
+            // if the request is cached, send it
+            if(isCached(sizeOfHtml) && isGet.equals("GET")){
+                sendCached(readContent(sizeOfHtml), outToClient);
+                System.out.println("L79: sendCached is run.");
             }
-            if (isGet.equals("GET")) {
-                if (sizeOfHtmlValue <= 9999) {
-                    Socket toServerSocket = new Socket("localhost", SERVER_PORT_NUMBER);
-                    String stringFromServer = "";
-                    outToServer = new DataOutputStream(toServerSocket.getOutputStream());
-                    outToServer.writeBytes(splitSentence + "\r\n");
+            // if the request is not cached, retrieve the message and cache and send it
+            else{
+                try {
+                    sizeOfHtmlValue = Integer.parseInt(sizeOfHtml);
+                } catch (NumberFormatException e) {
+                    sizeOfHtmlValue = 0;
+                }
+                if (isGet.equals("GET")) {
+                    if (sizeOfHtmlValue <= 9999) {
+                        String contentToCache = "";
+                        String stringFromServer = "";
 
-                    System.out.println(clientSentence + " has been sent");
+                        Socket toServerSocket = new Socket("localhost", SERVER_PORT_NUMBER);
+                        outToServer = new DataOutputStream(toServerSocket.getOutputStream());
+                        // forward to server
+                        outToServer.writeBytes(splitSentence + "\r\n");
 
-                    inFromServer = new BufferedReader(new InputStreamReader(toServerSocket.getInputStream()));
-                    System.out.println("Server has respond");
-                    stringFromServer = inFromServer.readLine();
-                    while(stringFromServer != null){
-                        outToClient.writeBytes(stringFromServer + "\r\n");
+                        System.out.println(clientSentence + " has been sent");
+
+                        inFromServer = new BufferedReader(new InputStreamReader(toServerSocket.getInputStream()));
+                        System.out.println("Server has respond");
+
+                        // Read from server
                         stringFromServer = inFromServer.readLine();
-                    }
+                        while(stringFromServer != null){
+//                            outToClient.writeBytes(stringFromServer + "\r\n");
+                            contentToCache += stringFromServer + "\r\n"; // store information to cache
+                            stringFromServer = inFromServer.readLine();
+                        }
+                        if(contentToCache != "")
+                            outToClient.writeBytes(contentToCache);
+                        // cache the current reply
+                        cacheContent(contentToCache, sizeOfHtml);
+                        System.out.println("cacheContent is called");
 
-                    String stringToClient = inFromServer.readLine();
-                    if(stringToClient == null){
-                        System.out.println("stringToClient is null");
-                    }
+//                        String stringToClient = inFromServer.readLine();
+//                        if(stringToClient == null){
+//                            System.out.println("stringToClient is null");
+//                        }
 
-//                    while(stringToClient !=  null){
-//                        outToClient.writeBytes(stringToClient);
-//                        stringToClient = inFromServer.readLine();
-//                        break;
-//                    }
+                        toServerSocket.close();
+                        connectionSocket.close();
 
-//                    outToClient.writeBytes(stringToClient + "\r\n");
-//                    outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
-//                    outToClient.writeBytes("Content-Length:"+ sizeOfHtmlValue +"\r\n\r\n\r\n");
-//                    outToClient.writeBytes("<html>" +
-//                            "<head><TITLE>Proxy</TITLE></head>" +
-//                            "<body><h1>" + "</h1></body>" +
-//                            "</html>");
-                    toServerSocket.close();
-                    connectionSocket.close();
-
-                } else {
-                    //"Request-URI Too Long" message with error code 414
-                    outToClient.writeBytes("HTTP/1.1 414 Request-URI Too Long\r\n");
-                    outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
+                    } else {
+                        //"Request-URI Too Long" message with error code 414
+                        outToClient.writeBytes("HTTP/1.1 414 Request-URI Too Long\r\n");
+                        outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
 //                    outToClient.writeBytes("<html>" +
 //                            "<head><TITLE>Request-URI Too Long</TITLE></head>" +
 //                            "<body><h1>Request-URI Too Long</h1></body>" +
 //                            "</html>");
-                    System.out.println("414 Request-URI Too Long");
-                    connectionSocket.close();
+                        System.out.println("414 Request-URI Too Long");
+                        connectionSocket.close();
+
+                    }
 
                 }
 
             }
-//            else {
-//                //“Not Implemented” (501)
-//                outToClient.writeBytes("HTTP/1.1 501 Not Implemented\r\n");
-//                outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
-////                outToClient.writeBytes("<html>" +
-////                        "<head><TITLE>Not Implemented</TITLE></head>" +
-////                        "<body><h1>The method is not Get</h1></body>" +
-////                        "</html>");
-//                System.out.println("Thread "+time+" has send the message");
-//                connectionSocket.close();
-//                toServerSocket.close();
-//            }
-
-
-            ///////////////////////
-
         } catch (ConnectException connectException){
             try {
 //                DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream());
@@ -172,5 +164,45 @@ class ProxyThreadSide extends Thread {
         String uri = splitSpace[1].split("/")[3];
         return splitSpace[0] + " /" + uri + " " + splitSpace[2];
     }
+
+    public String readContent(String fileName) throws FileNotFoundException {
+        File file = new File("C:\\Users\\omero\\IdeaProjects\\NetworkProject\\cache\\"
+                + fileName + ".txt");
+        Scanner reader = new Scanner(file);
+        String content = "";
+        while ( reader.hasNextLine() ){
+            content += reader.nextLine() + "\r\n";
+        }
+        return content;
+    }
+
+    public void cacheContent(String content, String fileName){
+        File file = new File("C:\\Users\\omero\\IdeaProjects\\NetworkProject\\cache\\"
+                + fileName + ".txt");
+        try {
+            FileWriter writer = new FileWriter(file.getAbsoluteFile());
+            BufferedWriter bufferedWriter = new BufferedWriter(writer);
+            bufferedWriter.write(content);
+            bufferedWriter.close();
+            System.out.println("Successfully cached");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public boolean isCached(String fileName){
+        File file = new File("C:\\Users\\omero\\IdeaProjects\\NetworkProject\\cache\\"
+                + fileName + ".txt");
+        return file.exists();
+    }
+
+    public void sendCached(String content, DataOutputStream outputStream){
+        try {
+            outputStream.writeBytes(content);
+        } catch (IOException ioException) {
+            ioException.printStackTrace();
+        }
+    }
+
 
 }

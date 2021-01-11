@@ -64,7 +64,7 @@ class ServerThreadSide extends Thread {
                 sizeOfHtmlValue = 0;
             }
             if (isGet.equals("GET")) {
-                if (20000 > sizeOfHtmlValue && sizeOfHtmlValue > 100) {
+                if (20000 > sizeOfHtmlValue && sizeOfHtmlValue >= 100) {
                     for (int x = sizeOfHtmlValue; (x - 100) > 0; x--)  // Hocanın verdiği HTML 96 byte sanki ona göre bir ayar çekebilirsin
                     {
                         addToHTML = addToHTML + "b";
@@ -73,11 +73,13 @@ class ServerThreadSide extends Thread {
 
                     outToClient.writeBytes("HTTP/1.1 200 OK\r\n");
                     outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
-                    outToClient.writeBytes("Content-Length:"+ sizeOfHtmlValue +"\r\n\r\n\r\n");
-                    outToClient.writeBytes("<html>" +
-                            "<head><TITLE>I am 100 bytes long</TITLE></head>" +
-                            "<body><h1>" + addToHTML + "</h1></body>" +
-                            "</html>");
+                    outToClient.writeBytes("Content-Length: "+ sizeOfHtmlValue +"\r\n\r\n\r\n");
+                    outToClient.writeBytes("<HTML>\n" +
+                            "<HEAD>\n" +
+                            "<TITLE>I am 100 bytes long</TITLE>" +
+                            "</HEAD>\n" +
+                            "<BODY> a a a a a a a a " + addToHTML + "</BODY>\n" +
+                            "</HTML>");
           //          outToClient.flush();
 
                     System.out.println("Message has send");
@@ -90,6 +92,7 @@ class ServerThreadSide extends Thread {
 //                            "<body><h1>" + addToHTML + "</h1></body>" +
 //                            "</html>");
                //     outToClient.flush();
+
                     System.out.println("Message has send");
                 }
 
@@ -112,7 +115,7 @@ class ServerThreadSide extends Thread {
 
             }
 
-//            connectionSocket.close();
+            connectionSocket.close();
 //            outToClient.close();
             ///////////////////////
 

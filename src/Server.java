@@ -2,6 +2,8 @@ import java.io.*;
 import java.net.*;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.Scanner;
 
 
 class Server {
@@ -70,19 +72,23 @@ class ServerThreadSide extends Thread {
                         addToHTML = addToHTML + "b";
 
                     }
-
+                    Date date = new Date();
                     outToClient.writeBytes("HTTP/1.1 200 OK\r\n");
-                    outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
-                    outToClient.writeBytes("Content-Length: "+ sizeOfHtmlValue +"\r\n\r\n\r\n");
+                    outToClient.writeBytes("Date:" + date + "\r\n");
+                    outToClient.writeBytes("Server: " + InetAddress.getLocalHost().getHostName()+"\r\n");
+                    outToClient.writeBytes("Last-Modified: " + date+"\r\n");
+                    outToClient.writeBytes("Content-Type: text/html\r\n");
+                    outToClient.writeBytes("Content-Length: "+ sizeOfHtmlValue +"\r\n\r\n");
                     outToClient.writeBytes("<HTML>\n" +
                             "<HEAD>\n" +
                             "<TITLE>I am 100 bytes long</TITLE>" +
                             "</HEAD>\n" +
                             "<BODY> a a a a a a a a " + addToHTML + "</BODY>\n" +
                             "</HTML>");
-          //          outToClient.flush();
+                    //          outToClient.flush();
 
-                    System.out.println("Message has send");
+
+
                 } else {
                     //"Bad Request" message with error code 400
                     outToClient.writeBytes("HTTP/1.1 400 Bad Request\r\n");
@@ -93,8 +99,8 @@ class ServerThreadSide extends Thread {
 //                            "</html>");
                //     outToClient.flush();
 
-                    System.out.println("Message has send");
                 }
+                System.out.println("Message has send");
 
             } else{
                 //“Not Implemented” (501)
@@ -116,8 +122,6 @@ class ServerThreadSide extends Thread {
             }
 
             connectionSocket.close();
-//            outToClient.close();
-            ///////////////////////
 
         } catch ( IOException e) {
             e.printStackTrace();
@@ -125,6 +129,5 @@ class ServerThreadSide extends Thread {
         }
 
     }
-
 
 }

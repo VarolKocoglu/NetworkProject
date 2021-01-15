@@ -80,18 +80,18 @@ class ProxyThreadSide extends Thread {
             }
             if (isGet.equals("GET") && ((((clientSentence.split(" "))[1]).split("/"))[2]).equals("localhost:8080")) {
                 if (sizeOfHtmlValue <= 9999) {
+                    Socket toServerSocket = new Socket("localhost", SERVER_PORT_NUMBER);
+                    outToServer = new DataOutputStream(toServerSocket.getOutputStream());
                     // send cached content
                     if(isCached(sizeOfHtml)){
-                        sendCached(readContent(sizeOfHtml)+"-2", outToClient);
+                        sendCached(readContent(sizeOfHtml+"-2"), outToClient);
                         sendCached(readContent(sizeOfHtml), outToClient);
                     }
                     // retrieve content and convey and cache it
                     else{
                         String contentToCache = "";
                         String additionalContent = "";
-                        Socket toServerSocket = new Socket("localhost", SERVER_PORT_NUMBER);
                         String stringFromServer = "";
-                        outToServer = new DataOutputStream(toServerSocket.getOutputStream());
                         outToServer.writeBytes(splitSentence + "\r\n");
 
                         System.out.println(clientSentence + " has been sent");
@@ -184,6 +184,7 @@ class ProxyThreadSide extends Thread {
         while ( reader.hasNextLine() ){
             content += reader.nextLine() + "\r\n";
         }
+        reader.close();
         return content;
     }
 

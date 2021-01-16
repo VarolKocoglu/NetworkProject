@@ -1,7 +1,10 @@
 import java.io.*;
 import java.net.*;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.Scanner;
 
 
 class Server {
@@ -53,7 +56,7 @@ class ServerThreadSide extends Thread {
 
 
             clientSentence = inFromClient.readLine();             // For getting after the /
-            if (clientSentence != null && clientSentence != "") {
+            if (clientSentence != null && !clientSentence.equals("")) {
                 result = clientSentence.split("/");
                 isGet = result[0].substring(0, result[0].length() - 1);
                 sizeOfHtml = result[1].substring(0, result[1].length() - 5);
@@ -64,24 +67,30 @@ class ServerThreadSide extends Thread {
                 sizeOfHtmlValue = 0;
             }
             if (isGet.equals("GET")) {
-                if (20000 > sizeOfHtmlValue && sizeOfHtmlValue > 100) {
+                if (20000 > sizeOfHtmlValue && sizeOfHtmlValue >= 100) {
                     for (int x = sizeOfHtmlValue; (x - 100) > 0; x--)  // Hocanın verdiği HTML 96 byte sanki ona göre bir ayar çekebilirsin
                     {
                         addToHTML = addToHTML + "b";
 
                     }
-
+                    Date date = new Date();
                     outToClient.writeBytes("HTTP/1.1 200 OK\r\n");
-                    outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
-                    outToClient.writeBytes("Content-Length:"+ sizeOfHtmlValue +"\r\n\r\n\r\n");
-                    outToClient.writeBytes("<html>" +
-                            "<head><TITLE>I am 100 bytes long</TITLE></head>" +
-                            "<body><h1>" + addToHTML + "</h1></body>" +
-                            "</html>");
-          //          outToClient.flush();
+                    outToClient.writeBytes("Date:" + date + "\r\n");
+                    outToClient.writeBytes("Server: " + InetAddress.getLocalHost().getHostName()+"\r\n");
+                    outToClient.writeBytes("Last-Modified: " + date+"\r\n");
+                    outToClient.writeBytes("Content-Type: text/html\r\n");
+                    outToClient.writeBytes("Content-Length: "+ sizeOfHtmlValue +"\r\n\r\n");
+                    outToClient.writeBytes("<HTML>\n" +
+                            "<HEAD>\n" +
+                            "<TITLE>I am 100 bytes long</TITLE>" +
+                            "</HEAD>\n" +
+                            "<BODY> a a a a a a a a " + addToHTML + "</BODY>\n" +
+                            "</HTML>");
+                    //          outToClient.flush();
 
-                    System.out.println("Message has send");
-                } else {
+
+
+                } else { // requests with higher uri than 20k
                     //"Bad Request" message with error code 400
                     outToClient.writeBytes("HTTP/1.1 400 Bad Request\r\n");
                     outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
@@ -90,10 +99,11 @@ class ServerThreadSide extends Thread {
 //                            "<body><h1>" + addToHTML + "</h1></body>" +
 //                            "</html>");
                //     outToClient.flush();
-                    System.out.println("Message has send");
-                }
 
-            } else{
+                }
+                System.out.println("Message has send");
+
+            } else if (isValidRequest(isGet)){ // for valid requests other than get
                 //“Not Implemented” (501)
                 try {
                     outToClient.writeBytes("HTTP/1.1 501 Not Implemented\r\n");
@@ -111,10 +121,12 @@ class ServerThreadSide extends Thread {
                 }
 
             }
+            else if(!isGet.equals("")){ // for invalid methods
+                outToClient.writeBytes("HTTP/1.1 400 Bad Request\r\n");
+                outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
+            }
 
-//            connectionSocket.close();
-//            outToClient.close();
-            ///////////////////////
+            connectionSocket.close();
 
         } catch ( IOException e) {
             e.printStackTrace();
@@ -122,6 +134,13 @@ class ServerThreadSide extends Thread {
         }
 
     }
-
+    public boolean isValidRequest(String request){
+        String[] requests = {"GET", "POST", "PUT", "PATCH", "DELETE", "COPY", "HEAD",
+        "OPTIONS", "LINK", "UNLINK", "PURGE", "LOCK", "UNLOCK", "PROPFIND", "VIEW"};
+        if (Arrays.asList(requests).contains(request))
+            return true;
+        else
+            return false;
+    }
 
 }

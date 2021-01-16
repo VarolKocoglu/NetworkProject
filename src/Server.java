@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.*;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Scanner;
@@ -55,7 +56,7 @@ class ServerThreadSide extends Thread {
 
 
             clientSentence = inFromClient.readLine();             // For getting after the /
-            if (clientSentence != null && clientSentence != "") {
+            if (clientSentence != null && !clientSentence.equals("")) {
                 result = clientSentence.split("/");
                 isGet = result[0].substring(0, result[0].length() - 1);
                 sizeOfHtml = result[1].substring(0, result[1].length() - 5);
@@ -89,7 +90,7 @@ class ServerThreadSide extends Thread {
 
 
 
-                } else {
+                } else { // requests with higher uri than 20k
                     //"Bad Request" message with error code 400
                     outToClient.writeBytes("HTTP/1.1 400 Bad Request\r\n");
                     outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
@@ -102,7 +103,7 @@ class ServerThreadSide extends Thread {
                 }
                 System.out.println("Message has send");
 
-            } else{
+            } else if (isValidRequest(isGet)){ // for valid requests other than get
                 //“Not Implemented” (501)
                 try {
                     outToClient.writeBytes("HTTP/1.1 501 Not Implemented\r\n");
@@ -120,6 +121,10 @@ class ServerThreadSide extends Thread {
                 }
 
             }
+            else if(!isGet.equals("")){ // for invalid methods
+                outToClient.writeBytes("HTTP/1.1 400 Bad Request\r\n");
+                outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
+            }
 
             connectionSocket.close();
 
@@ -128,6 +133,14 @@ class ServerThreadSide extends Thread {
 
         }
 
+    }
+    public boolean isValidRequest(String request){
+        String[] requests = {"GET", "POST", "PUT", "PATCH", "DELETE", "COPY", "HEAD",
+        "OPTIONS", "LINK", "UNLINK", "PURGE", "LOCK", "UNLOCK", "PROPFIND", "VIEW"};
+        if (Arrays.asList(requests).contains(request))
+            return true;
+        else
+            return false;
     }
 
 }

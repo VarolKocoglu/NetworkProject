@@ -26,6 +26,7 @@ class ProxyServer {
                 Thread thread = new ProxyThreadSide(connectionSocket);
                 thread.start();
 
+
             }
 
 
@@ -78,14 +79,18 @@ class ProxyThreadSide extends Thread {
             } catch (NumberFormatException e) {
                 sizeOfHtmlValue = 0;
             }
-            if (isGet.equals("GET") && ((((clientSentence.split(" "))[1]).split("/"))[2]).equals("localhost:8080")) {
-                if (sizeOfHtmlValue <= 9999) {
+            if (isGet.equals("GET")){ //  && ((((clientSentence.split(" "))[1]).split("/"))[2]).equals("localhost:8080"))
+                if (sizeOfHtmlValue <= 9999 && !sizeOfHtml.equals("favicon.ico")) {
                     Socket toServerSocket = new Socket("localhost", SERVER_PORT_NUMBER);
                     outToServer = new DataOutputStream(toServerSocket.getOutputStream());
                     // send cached content
                     if(isCached(sizeOfHtml)){
                         sendCached(readContent(sizeOfHtml+"-2"), outToClient);
                         sendCached(readContent(sizeOfHtml), outToClient);
+                        outToServer.close();
+                        inFromClient.close();
+                        toServerSocket.close();
+                        connectionSocket.close();
                     }
                     // retrieve content and convey and cache it
                     else{
@@ -112,12 +117,16 @@ class ProxyThreadSide extends Thread {
 
                         }
                         // cache the content
-                        cacheContent(contentToCache, sizeOfHtml);
-                        cacheAdditionalContent(additionalContent, sizeOfHtml);
+                        if(sizeOfHtmlValue >= 100){
+                            cacheContent(contentToCache, sizeOfHtml);
+                            cacheAdditionalContent(additionalContent, sizeOfHtml);
+                        }
 
-
+                        outToServer.close();
+                        inFromClient.close();
                         toServerSocket.close();
                         connectionSocket.close();
+
                     }
                 } else {
                     //"Request-URI Too Long" message with error code 414
@@ -128,13 +137,34 @@ class ProxyThreadSide extends Thread {
 //                            "<body><h1>Request-URI Too Long</h1></body>" +
 //                            "</html>");
                     System.out.println("414 Request-URI Too Long");
+//                    outToClient.close();
+
                     connectionSocket.close();
 
                 }
 
+                outToClient.close();
+
+
             }
-//            else {
-//                //“Not Implemented” (501)
+            else if(!isGet.equals("")){
+                String stringFromServer = "";
+                Socket toServerSocket = new Socket("localhost", SERVER_PORT_NUMBER);
+                outToServer = new DataOutputStream(toServerSocket.getOutputStream());
+                outToServer.writeBytes(splitSentence + "\r\n");
+                inFromServer = new BufferedReader(new InputStreamReader(toServerSocket.getInputStream()));
+                System.out.println("Server has respond");
+                stringFromServer = inFromServer.readLine();
+                while(stringFromServer != null){
+                    outToClient.writeBytes(stringFromServer + "\r\n");
+                    stringFromServer = inFromServer.readLine();
+
+                }
+
+                outToServer.close();
+                inFromServer.close();
+                connectionSocket.close();
+                toServerSocket.close();
 //                outToClient.writeBytes("HTTP/1.1 501 Not Implemented\r\n");
 //                outToClient.writeBytes("Content-Type: text/html\r\n\r\n");
 ////                outToClient.writeBytes("<html>" +
@@ -144,7 +174,7 @@ class ProxyThreadSide extends Thread {
 //                System.out.println("Thread "+time+" has send the message");
 //                connectionSocket.close();
 //                toServerSocket.close();
-//            }
+            }
 
 
             ///////////////////////
@@ -172,9 +202,20 @@ class ProxyThreadSide extends Thread {
     }
 
     public String splitUp(String str){
-        String[] splitSpace = str.split(" ");
-        String uri = splitSpace[1].split("/")[3];
-        return splitSpace[0] + " /" + uri + " " + splitSpace[2];
+
+
+        try {
+            String[] splitSlash = str.split("/");
+            Integer.parseInt(splitSlash[1].split(" ")[0]);
+            return str;
+        }
+        catch (NumberFormatException e){
+            String[] splitSpace = str.split(" ");
+            String uri = splitSpace[1].split("/")[3];
+            return splitSpace[0] + " /" + uri + " " + splitSpace[2];
+
+        }
+
     }
     public String readContent(String fileName) throws FileNotFoundException {
         File file = new File("cache\\"
